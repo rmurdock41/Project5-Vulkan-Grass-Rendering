@@ -973,16 +973,20 @@ void Renderer::RecordCommandBuffers() {
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, grassPipeline);
 
         for (uint32_t j = 0; j < scene->GetBlades().size(); ++j) {
-            VkBuffer vertexBuffers[] = { scene->GetBlades()[j]->GetCulledBladesBuffer() };
+            VkBuffer vertexBuffers[] = { scene->GetBlades()[j]->GetBladesBuffer() };
             VkDeviceSize offsets[] = { 0 };
             // TODO: Uncomment this when the buffers are populated
             // vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+
+            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 
             // TODO: Bind the descriptor set for each grass blades model
 
             // Draw
             // TODO: Uncomment this when the buffers are populated
             // vkCmdDrawIndirect(commandBuffers[i], scene->GetBlades()[j]->GetNumBladesBuffer(), 0, 1, sizeof(BladeDrawIndirect));
+
+            vkCmdDraw(commandBuffers[i], NUM_BLADES, 1, 0, 0);
         }
 
         // End render pass
