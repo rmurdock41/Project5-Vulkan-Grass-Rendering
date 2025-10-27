@@ -40,10 +40,21 @@ void main() {
     out_v2[gl_InvocationID] = in_v2[gl_InvocationID];
     out_up[gl_InvocationID] = in_up[gl_InvocationID];
     
-    gl_TessLevelInner[0] = 5.0;
-    gl_TessLevelInner[1] = 1.0;
-    gl_TessLevelOuter[0] = 5.0;
-    gl_TessLevelOuter[1] = 1.0;
-    gl_TessLevelOuter[2] = 5.0;
-    gl_TessLevelOuter[3] = 1.0;
+// Calculate distance-based LOD with smooth transition
+vec3 cameraPos = inverse(camera.view)[3].xyz;
+vec3 bladePos = in_v0[gl_InvocationID].xyz;
+float dist = length(cameraPos - bladePos);
+
+// Smooth interpolation from 5.0 to 1.0 based on distance
+float tessLevel = mix(5.0, 1.0, smoothstep(5.0, 50.0, dist));
+
+// Clamp to valid range
+tessLevel = clamp(tessLevel, 1.0, 5.0);
+
+gl_TessLevelInner[0] = tessLevel;
+gl_TessLevelInner[1] = 1.0;
+gl_TessLevelOuter[0] = tessLevel;
+gl_TessLevelOuter[1] = 1.0;
+gl_TessLevelOuter[2] = tessLevel;
+gl_TessLevelOuter[3] = 1.0;
 }

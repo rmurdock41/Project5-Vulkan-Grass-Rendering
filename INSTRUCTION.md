@@ -92,11 +92,13 @@ We recommend starting with trying to display the grass blades without any forces
 In this project, grass blades will be represented as Bezier curves while performing physics calculations and culling operations. 
 
 Each Bezier curve has three control points.
+
 * `v0`: the position of the grass blade on the geomtry
 * `v1`: a Bezier curve guide that is always "above" `v0` with respect to the grass blade's up vector (explained soon)
 * `v2`: a physical guide for which we simulate forces on
 
 We also need to store per-blade characteristics that will help us simulate and tessellate our grass blades correctly.
+
 * `up`: the blade's up vector, which corresponds to the normal of the geometry that the grass blade resides on at `v0`
 * Orientation: the orientation of the grass blade's face
 * Height: the height of the grass blade
@@ -166,6 +168,7 @@ If all three points are outside of the view-frustum, we will cull the grass blad
 Similarly to orientation culling, we can end up with grass blades that at large distances are smaller than the size of a pixel. This could lead to additional artifacts in our renders. In this case, we can cull grass blades as a function of their distance from the camera.
 
 You are free to define two parameters here.
+
 * A max distance afterwhich all grass blades will be culled.
 * A number of buckets to place grass blades between the camera and max distance into.
 
@@ -181,20 +184,24 @@ The generated vertices will be passed to the tessellation evaluation shader, whe
 
 To build more intuition on how tessellation works, I highly recommend playing with the [HelloTessellation sample](https://github.com/CIS565-Fall-2017/Vulkan-Samples/tree/master/samples/5_helloTessellation) and reading this [tutorial on tessellation](https://ogldev.org/www/tutorial30/tutorial30.html).
 
-## Extra Credit  
+## Extra Credit
 
 These extra credit are for reference only. It is encouraged to come up with your own idea! 
 
-### LOD  
+### LOD
+
 Tessellate to varying levels of detail as a function of how far the grass blade is from the camera. For example, if the blade is very far, only generate four vertices in the tessellation control shader. You can experiment with different numbers of vertices and distance to see how does
 
 ### Occlusion culling
+
 This type of culling only makes sense if our scene has additional objects aside from the plane and the grass blades. To receive this extra credit, you should first add more geometry in the scene (Cube, sphere, etc.). Then, cull grass blades that are occluded by other geometry. Hint: you can use a depth map to accomplish this!
 
 ### Interactive Grass
+
 You can make the demo interactive by adding a GUI (e.g., using ImGui) to control parameters like wind force and direction. You could also add a controllable geometry (like a sphere) that physically interacts with the grass, pushing blades aside as it moves.
 
-### Better rendering  
+### Better rendering
+
 Enhance the final render by adding features like a skybox to create an immersive background, or by applying more sophisticated shading techniques to the grass for better lighting and color variation. You can check recent GDC on grass rendering for this. One good example is [Procedural Grass in 'Ghost of Tsushima'](https://www.youtube.com/watch?v=Ibe1JBF5i5Y).
 
 ## Resources
@@ -209,7 +216,6 @@ The following resources may be useful for this project.
 * [Vulkan tutorial](https://vulkan-tutorial.com/)
 * [RenderDoc blog on Vulkan](https://renderdoc.org/vulkan-in-30-minutes.html)
 * [Tessellation tutorial](https://ogldev.org/www/tutorial30/tutorial30.html)
-
 
 ## Third-Party Code Policy
 
@@ -227,6 +233,7 @@ The following resources may be useful for this project.
 ### Performance Analysis
 
 The performance analysis is where you will investigate how...
+
 * Your renderer handles varying numbers of grass blades
 * The improvement you get by culling using each of the three culling tests
 
@@ -235,6 +242,7 @@ The performance analysis is where you will investigate how...
 If you have modified any of the `CMakeLists.txt` files at all (aside from the list of `SOURCE_FILES`), mention it explicity. Beware of any build issues discussed on the Piazza.
 
 Open a GitHub pull request so that we can see that you have finished.
+
 * The title should be "Project 5: YOUR NAME".
 * The template of the comment section of your pull request is attached below, you can do some copy and paste:  
   * [Repo Link](https://link-to-your-repo)

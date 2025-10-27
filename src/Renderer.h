@@ -41,6 +41,9 @@ public:
 
     void Frame();
 
+    void CreateSkyboxResources();
+    void CreateSkyboxPipeline();
+
 private:
     Device* device;
     VkDevice logicalDevice;
@@ -85,4 +88,10 @@ private:
 
     std::vector<VkCommandBuffer> commandBuffers;
     VkCommandBuffer computeCommandBuffer;
+
+    
+    VkPipelineLayout skyboxPipelineLayout;
+    VkPipeline skyboxPipeline;
+    VkBuffer skyboxVertexBuffer;
+    VkDeviceMemory skyboxVertexBufferMemory;
 };
