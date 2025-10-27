@@ -21,12 +21,5 @@ void main() {
     
     vec3 grassColor = mix(grassColorBottom, grassColorTop, fragUV.y);
     
-    vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
-    float diff = max(dot(fragNormal, lightDir), 0.0);
-    diff = diff * 0.5 + 0.5;
-    
-    vec3 finalColor = grassColor * diff;
-    
-    outColor = vec4(finalColor, 1.0);
-
+    outColor = vec4(grassColor, 1.0);
 }

@@ -169,15 +169,15 @@ void main() {
     vec4 clipV2 = camera.proj * camera.view * vec4(v2corr, 1.0);
     vec4 clipM = camera.proj * camera.view * vec4(m, 1.0);
     
-    // Convert to NDC
-    clipV0 /= clipV0.w;
-    clipV2 /= clipV2.w;
-    clipM /= clipM.w;
-    
     float tolerance = 1.0;
-    bool v0InFrustum = inBounds(clipV0.x, tolerance) && inBounds(clipV0.y, tolerance) && inBounds(clipV0.z, 1.0);
-    bool v2InFrustum = inBounds(clipV2.x, tolerance) && inBounds(clipV2.y, tolerance) && inBounds(clipV2.z, 1.0);
-    bool mInFrustum = inBounds(clipM.x, tolerance) && inBounds(clipM.y, tolerance) && inBounds(clipM.z, 1.0);
+    
+    float hV0 = clipV0.w + tolerance;
+    float hV2 = clipV2.w + tolerance;
+    float hM = clipM.w + tolerance;
+    
+    bool v0InFrustum = abs(clipV0.x) <= hV0 && abs(clipV0.y) <= hV0 && abs(clipV0.z) <= hV0;
+    bool v2InFrustum = abs(clipV2.x) <= hV2 && abs(clipV2.y) <= hV2 && abs(clipV2.z) <= hV2;
+    bool mInFrustum = abs(clipM.x) <= hM && abs(clipM.y) <= hM && abs(clipM.z) <= hM;
     
     if (!v0InFrustum && !v2InFrustum && !mInFrustum) {
         return;
