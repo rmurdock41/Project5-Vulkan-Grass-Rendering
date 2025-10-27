@@ -77,7 +77,9 @@ SwapChain::SwapChain(Device* device, VkSurfaceKHR vkSurface, unsigned int numBuf
 void SwapChain::Create() {
     auto* instance = device->GetInstance();
 
-    const auto& surfaceCapabilities = instance->GetSurfaceCapabilities();
+    // Re-query surface capabilities to get updated window dimensions
+    VkSurfaceCapabilitiesKHR surfaceCapabilities;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(instance->GetPhysicalDevice(), vkSurface, &surfaceCapabilities);
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(instance->GetSurfaceFormats());
     VkPresentModeKHR presentMode = chooseSwapPresentMode(instance->GetPresentModes());
@@ -199,13 +201,13 @@ bool SwapChain::Acquire() {
         vkQueueWaitIdle(device->GetQueue(QueueFlags::Present));
     }
     VkResult result = vkAcquireNextImageKHR(device->GetVkDevice(), vkSwapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+    
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        return false;
+    }
+    
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw std::runtime_error("Failed to acquire swap chain image");
-    }
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        Recreate();
-        return false;
     }
 
     return true;
@@ -228,14 +230,16 @@ bool SwapChain::Present() {
 
     VkResult result = vkQueuePresentKHR(device->GetQueue(QueueFlags::Present), &presentInfo);
 
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        return false;
+    }
+
     if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to present swap chain image");
     }
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-        Recreate();
-        return false;
-    }
+
 
     return true;
 }

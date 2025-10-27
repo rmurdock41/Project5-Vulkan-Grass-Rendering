@@ -5,6 +5,7 @@
 #include "Blades.h"
 #include "Camera.h"
 #include "Image.h"
+#include <iostream>
 
 static constexpr unsigned int WORKGROUP_SIZE = 32;
 
@@ -985,6 +986,8 @@ void Renderer::DestroyFrameResources() {
 }
 
 void Renderer::RecreateFrameResources() {
+    vkDeviceWaitIdle(logicalDevice);
+
     vkDestroyPipeline(logicalDevice, graphicsPipeline, nullptr);
     vkDestroyPipeline(logicalDevice, grassPipeline, nullptr);
     vkDestroyPipelineLayout(logicalDevice, graphicsPipelineLayout, nullptr);
@@ -1157,10 +1160,10 @@ void Renderer::RecordCommandBuffers() {
 }
 
 void Renderer::Frame() {
-
+    
     VkSubmitInfo computeSubmitInfo = {};
     computeSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
+    
     computeSubmitInfo.commandBufferCount = 1;
     computeSubmitInfo.pCommandBuffers = &computeCommandBuffer;
 
@@ -1170,7 +1173,7 @@ void Renderer::Frame() {
 
     if (!swapChain->Acquire()) {
         RecreateFrameResources();
-        return;
+        return;  
     }
 
     // Submit the command buffer
@@ -1218,6 +1221,7 @@ Renderer::~Renderer() {
     vkDestroyDescriptorSetLayout(logicalDevice, cameraDescriptorSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(logicalDevice, modelDescriptorSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(logicalDevice, timeDescriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(logicalDevice, computeDescriptorSetLayout, nullptr);
 
     vkDestroyDescriptorPool(logicalDevice, descriptorPool, nullptr);
 

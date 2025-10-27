@@ -5,6 +5,9 @@
 #include "Camera.h"
 #include "Scene.h"
 #include "Image.h"
+#include <chrono>
+#include <sstream>
+#include <iomanip>
 
 Device* device;
 SwapChain* swapChain;
@@ -143,10 +146,32 @@ int main() {
     glfwSetMouseButtonCallback(GetGLFWWindow(), mouseDownCallback);
     glfwSetCursorPosCallback(GetGLFWWindow(), mouseMoveCallback);
 
+    auto lastTime = std::chrono::high_resolution_clock::now();
+    int frameCount = 0;
+
     while (!ShouldQuit()) {
         glfwPollEvents();
         scene->UpdateTime();
         renderer->Frame();
+
+        frameCount++;
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float deltaTime = std::chrono::duration<float>(currentTime - lastTime).count();
+
+        if (deltaTime >= 0.5f) {
+            float fps = frameCount / deltaTime;
+            float frameTimeMs = deltaTime / frameCount * 1000.0f;
+
+            std::ostringstream title;
+            title << "Vulkan Grass Rendering | FPS: "
+                << std::fixed << std::setprecision(1) << fps
+                << " | Frame Time: " << std::setprecision(2) << frameTimeMs << "ms";
+
+            glfwSetWindowTitle(GetGLFWWindow(), title.str().c_str());
+
+            frameCount = 0;
+            lastTime = currentTime;
+        }
     }
 
     vkDeviceWaitIdle(device->GetVkDevice());
@@ -161,6 +186,7 @@ int main() {
     delete renderer;
     delete swapChain;
     delete device;
+    vkDestroySurfaceKHR(instance->GetVkInstance(), surface, nullptr);
     delete instance;
     DestroyWindow();
     return 0;

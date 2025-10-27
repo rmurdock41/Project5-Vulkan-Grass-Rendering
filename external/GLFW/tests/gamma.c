@@ -122,7 +122,8 @@ int main(int argc, char** argv)
         area = nk_rect(0.f, 0.f, (float) width, (float) height);
 
         glClear(GL_COLOR_BUFFER_BIT);
-        nk_glfw3_new_frame();
+        nk_glfw3_new_
+            frame();
         if (nk_begin(nk, "", area, 0))
         {
             const GLFWgammaramp* ramp = glfwGetGammaRamp(monitor);
