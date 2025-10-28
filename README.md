@@ -43,7 +43,7 @@ Physics simulation is performed in the compute shader, calculating forces on all
 
 #### GPU Physics Simulation - Recovery Force
 
-Recovery force is calculated as `recovery = (iv2 - v2) * stiffness`, where `iv2 = v0 + up * height` is the initial position of v2 when the blade is upright. The force magnitude is controlled by the stiffness coefficient—higher stiffness produces stronger recovery force and stiffer blades.
+Recovery force is calculated as `recovery = (iv2 - v2) * stiffness`, where `iv2 = v0 + up * height` is the initial position of v2 when the blade is upright. The force magnitude is controlled by the stiffness coefficient - higher stiffness produces stronger recovery force and stiffer blades.
 
 #### GPU Physics Simulation - Wind Force
 
@@ -59,7 +59,7 @@ Orientation culling removes grass blades perpendicular to the view direction, as
 
 #### Culling Techniques - View-Frustum Culling
 
-![](img/Fculling.gif)
+![](img/Fculling2.gif)
 
 View-frustum culling removes grass blades outside the camera's view. Three points are tested: v0 (base), v2 (tip), and m (midpoint, calculated as `m = 0.25 * v0 + 0.5 * v1 + 0.25 * v2`). These points are projected to clip space: `clipV0 = camera.proj * camera.view * vec4(v0, 1.0)`. For each clip space coordinate, `h = clipPos.w + tolerance` is calculated, where tolerance is 1.0 to provide some margin. A point is inside the frustum when `abs(clipPos.x) <= h && abs(clipPos.y) <= h && abs(clipPos.z) <= h`. A blade is only culled when all three points are outside the frustum.
 
@@ -73,13 +73,9 @@ Distance culling performs probabilistic culling based on blade distance from the
 
 ### Tessellation and LOD System
 
-
-
 ![](img/lod.gif)
 
 *Different LOD levels are visualized with colors*
-
-
 
 Grass blades passing all culling tests are sent to the graphics pipeline's tessellation stage. The **vertex shader** passes Bezier curve control points (**v0**, **v1**, **v2**, **up**) to the **tessellation control shader**. In the tessellation control shader, the distance between the blade and camera is calculated as `dist = length(cameraPos - bladePos)`, and tessellation level is dynamically set based on distance: **5 levels** for distances under 10 meters (high detail), **3 levels** for 10-25 meters (medium detail), and **2 levels** beyond 25 meters (low detail). This LOD system implements smooth transitions via `tessLevel = mix(5.0, 1.0, smoothstep(5.0, 50.0, dist))`, avoiding abrupt tessellation changes. Tessellation levels are set through **gl_TessLevelInner[0]** and **gl_TessLevelOuter**, controlling the number of vertices generated along the blade height.
 
@@ -100,3 +96,57 @@ The skybox is rendered first each frame, before all other geometry. It uses a se
 The fragment shader implements multiple lighting techniques to enhance grass visual quality. Base color transitions between dark green at the base and light green at the tip through height-based interpolation. A **Lambert diffuse lighting model** simulates sunlight. **Wrap-around lighting** technique `diffuse = (NdotL + 0.5) / 1.5` produces softer shading transitions, avoiding harsh shadow boundaries. **Rim light** effect is calculated from normal and view direction, using a power function to create sharp falloff, adding a pale yellow-green outline at blade edges to enhance depth perception. The final color combines **ambient light**, **diffuse light**, and **rim light**.
 
 ---
+
+## Performance Analysis
+
+#### blade count
+
+Tests  at **640x480 resolution** to measure the impact of grass blade count on frame rate.
+
+| Blade Count      | FPS  |
+| ---------------- | ---- |
+| 2^13 (8,192)     | 3677 |
+| 2^15 (32,768)    | 1540 |
+| 2^17 (131,072)   | 472  |
+| 2^19 (524,288)   | 114  |
+| 2^21 (2,097,152) | 31   |
+| 2^23 (8,388,608) | 7.7  |
+
+![Performance Graph](img/number.png)
+
+Performance bottlenecks come from three main stages. The **compute shader** physics simulation calculates gravity, recovery force, and wind force for each blade, with computation scaling linearly with blade count. The **tessellation stage** generates vertices for each blade based on LOD level, with higher tessellation producing more geometry. The **fragment shader** computes Lambert diffuse and rim light for all generated pixels, with pixel count depending on the screen area covered by grass blades.
+
+#### Culling
+
+Tests were conducted with **2^19 (524,288) blades** at **640x480 resolution** to evaluate the effectiveness of different culling techniques.
+
+**Test Data:**
+
+| Culling Configuration | FPS |
+| --------------------- | --- |
+| No Culling            | 64  |
+| Orientation Only      | 94  |
+| Frustum Only          | 71  |
+| Distance Only         | 83  |
+| All Culling           | 114 |
+
+![Culling Performance Graph](img/culling.png)
+
+**Orientation culling** shows the most significant impact, improving performance from 64 FPS to 94 FPS (46.9% increase), as it removes large numbers of blades perpendicular to the view direction that are nearly invisible on screen but still require processing. **Distance culling** provides a 29.7% performance gain (83 FPS) by probabilistically removing distant blades to reduce rendering load. **Frustum culling** shows the smallest improvement (71 FPS, 10.9% increase), as most blades remain within view in scenes with wide camera angles and flat terrain.
+
+When all three culling techniques are combined, FPS reaches 114, representing a 78.1% improvement over no culling. The effects of culling techniques do not simply add up, as different methods overlap (the same blade may satisfy multiple culling conditions simultaneously). In high blade count scenarios, the culling system is essential for maintaining real-time performance.
+
+
+
+#### LOD System
+
+Tests were conducted with **2^19 (524,288) blades** at **640x480 resolution** with the camera positioned far enough to trigger LOD.
+
+| LOD Configuration | FPS |
+| ----------------- | --- |
+| No LOD            | 399 |
+| With LOD          | 573 |
+
+![LOD Performance Graph](img/lod.png)
+
+The LOD system provides a 43.6% performance improvement (from 399 FPS to 573 FPS). When the camera is distant, most blades are reduced to 2-3 tessellation levels, significantly decreasing the vertex count generated by the tessellation evaluation shader. Without LOD, all blades use a fixed 5-level tessellation, generating excessive geometry with details imperceptible at distance. The LOD system dynamically adjusts tessellation levels to substantially reduce rendering load while maintaining visual quality, demonstrating the effectiveness of distance-based tessellation optimization.
