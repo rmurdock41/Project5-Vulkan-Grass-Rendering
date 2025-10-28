@@ -50,8 +50,16 @@ void main() {
     vec3 worldPos = mix(c0, c1, u);
     
     
-    vec3 normal = normalize(cross(t1, normalize(v2 - v0)));
-    fragNormal = normal;
+    // Calculate proper normal for grass blade face
+    vec3 tangentAlongBlade = normalize(v2 - v0);  // Direction along blade height
+    vec3 normal = normalize(cross(t1, tangentAlongBlade));
+
+    // Make sure normal points outward based on which side of blade 
+    if (u < 0.5) {
+        normal = -normal;  // Flip for left side
+    }
+
+fragNormal = normal;
     
     fragUV = vec2(u, v);
     

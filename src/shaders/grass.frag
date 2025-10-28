@@ -21,5 +21,29 @@ void main() {
     
     vec3 grassColor = mix(grassColorBottom, grassColorTop, fragUV.y);
     
-    outColor = vec4(grassColor, 1.0);
+    vec3 lightDir = normalize(vec3(0.5, 1.0, 0.3));  // Sun direction
+    vec3 normal = normalize(fragNormal);
+    
+    // Diffuse lighting 
+    float NdotL = dot(normal, lightDir);
+    float diffuse = (NdotL + 0.5) / 1.5;  // Wrap lighting
+    diffuse = clamp(diffuse, 0.0, 1.0);
+    
+    // Ambient light (base lighting when no direct sun)
+    vec3 ambient = grassColor * 0.3;
+    
+
+    vec3 diffuseColor = grassColor * diffuse * 0.7;
+    
+    vec3 viewDir = normalize(vec3(0.0, 1.0, 0.0));
+    
+    // Rim effect: edges perpendicular to view are brighter
+    float rim = 1.0 - abs(dot(normal, viewDir));
+    rim = pow(rim, 3.0);  // Sharp falloff
+    
+    vec3 rimColor = vec3(0.8, 1.0, 0.6) * rim * 0.3;  //  rimLight
+    
+    vec3 finalColor = ambient + diffuseColor + rimColor;
+    
+    outColor = vec4(finalColor, 1.0);
 }
