@@ -1,0 +1,26 @@
+{
+  "showGround": true,
+  "showGrass": false,
+  "environment": {
+    "path": "../environments/default.hdr",
+    "backgroundIntensity": 0.35,
+    "lightingIntensity": 0.65,
+    "rotation": 205.0,
+    "visible": true
+  },
+  "camera": {
+    "position": [0.0, 0.55, 3.5],
+    "target": [0.0, 0.55, 0.0],
+    "fov": 35.0,
+    "near": 0.02,
+    "far": 30.0
+  },
+  "models": [
+    {
+      "path": "../models/Hunters_Dream_Tombstone_NormalTest.glb",
+      "position": [0.0, 0.0, 0.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0]
+    }
+  ]
+}

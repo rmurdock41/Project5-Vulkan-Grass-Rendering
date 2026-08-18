@@ -1,0 +1,19 @@
+{
+  "showGround": true,
+  "showGrass": true,
+  "environment": {
+    "path": "../environments/default.hdr",
+    "backgroundIntensity": 0.85,
+    "lightingIntensity": 0.4,
+    "rotation": 0.0,
+    "visible": true
+  },
+  "models": [
+    {
+      "path": "../models/BB_PlainDoll_AllUVTextured_Static.glb",
+      "position": [0.1, 1.51, 0.0],
+      "rotation": [0.0, 180.0, 0.0],
+      "scale": [0.014, 0.014, 0.014]
+    }
+  ]
+}

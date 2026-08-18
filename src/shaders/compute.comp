@@ -1,4 +1,4 @@
-﻿#version 450
+#version 450
 #extension GL_ARB_separate_shader_objects : enable
 
 #define WORKGROUP_SIZE 32
@@ -19,6 +19,7 @@ struct Blade {
     vec4 v1;
     vec4 v2;
     vec4 up;
+    vec4 velocity;
 };
 
 // TODO: Add bindings to:
@@ -54,159 +55,202 @@ layout(set = 2, binding = 2) buffer NumBlades {
     uint firstInstance;
 } numBlades;
 
+layout(set = 2, binding = 3) buffer CulledFlowers {
+    Blade blades[];
+} culledFlowers;
+
+layout(set = 2, binding = 4) buffer FlowerDraw {
+    uint indexCount;
+    uint instanceCount;
+    uint firstIndex;
+    int vertexOffset;
+    uint firstInstance;
+} flowerDraw;
+
+layout(push_constant) uniform FlowerCullSettings {
+    float density;
+    uint enabled;
+} flowerSettings;
+
 bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
 }
 
 void main() {
-	// Reset the number of blades to 0
-    if (gl_GlobalInvocationID.x == 0) {
-        numBlades.vertexCount = 0;
-    }
-    barrier();
-
     uint index = gl_GlobalInvocationID.x;
-    
+
     if (index >= inputBlades.blades.length()) {
         return;
     }
-    
+
     Blade blade = inputBlades.blades[index];
-    
+
     vec3 v0 = blade.v0.xyz;
     vec3 v1 = blade.v1.xyz;
     vec3 v2 = blade.v2.xyz;
     vec3 up = blade.up.xyz;
-    
+
     float orientation = blade.v0.w;
     float height = blade.v1.w;
     float width = blade.v2.w;
     float stiffness = blade.up.w;
-    
-    // PHYSICS SIMULATION 
-    
-    float dt = min(deltaTime, 0.1);
-    vec3 iv2 = v0 + up * height;
-    
-    // Recovery
-    vec3 recovery = (iv2 - v2) * stiffness;
-    
-    // Gravity
-    vec3 gE = vec3(0.0, -9.8, 0.0);
-    vec3 front = normalize(cross(up, vec3(sin(orientation), 0.0, cos(orientation))));
-    vec3 gF = 0.25 * length(gE) * front;
-    vec3 gravity = gE + gF;
-    
-    // Wind
-    float windStrength = 2.0;
-    vec3 windDirection = vec3(1.0, 0.0, 0.0);
-    float windWave = sin(totalTime * 2.0 + v0.x * 0.5 + v0.z * 0.5);
-    vec3 wind = windDirection * windStrength * windWave;
-    
-    float directionalAlignment = 1.0 - abs(dot(normalize(wind), normalize(v2 - v0)));
-    float heightRatio = dot(v2 - v0, up) / height;
-    float windAlignment = directionalAlignment * heightRatio;
-    wind *= windAlignment;
-    
-    // Total force
-    vec3 totalForce = recovery + gravity + wind;
-    v2 += totalForce * dt;
-    
-    // Damping on displacement
-    vec3 displacement = v2 - v0;
-    displacement *= 0.97;
-    v2 = v0 + displacement;
-    
-    // State validation
-    v2 = v2 - up * min(dot(up, v2 - v0), 0.0);
+    vec3 front = normalize(cross(
+        up, vec3(sin(orientation), 0.0, cos(orientation))));
 
-    float currentHeight = dot(v2 - v0, up);
-    float minHeight = height * 0.7;  
-    vec3 horizontalDisp = v2 - v0 - up * currentHeight;
-    v2 = v0 + up * max(currentHeight, minHeight) + horizontalDisp;
-    
-    float lproj = length(v2 - v0 - up * dot(v2 - v0, up));
-    v1 = v0 + up * height * max(1.0 - lproj / height, 0.05 * max(lproj / height, 1.0));
-    
-    float L0 = distance(v2, v0);
-    float L1 = distance(v0, v1) + distance(v1, v2);
-    float L = (2.0 * L0 + L1) / 3.0;
-    
-    float r = height / max(L, 0.01);
-    r = clamp(r, 0.5, 2.0);
-    
-    vec3 v1corr = v0 + r * (v1 - v0);
-    vec3 v2corr = v1corr + r * (v2 - v1);
-    
-    if (any(isnan(v1corr)) || any(isnan(v2corr)) || 
-        length(v2corr - v0) > height * 3.0) {
-        v1corr = v0 + up * height * 0.5;
-        v2corr = v0 + up * height;
+    // STABLE TIP-PARTICLE PHYSICS
+    //
+    // The old implementation added force directly to position and then
+    // applied a frame-dependent hard correction. That has no velocity state
+    // and oscillates when deltaTime varies. This version keeps velocity,
+    // integrates it with bounded substeps, and projects it onto the tangent
+    // plane after enforcing the fixed blade length.
+    vec3 tip = v2;
+    vec3 velocity = blade.velocity.xyz;
+    vec3 restTip = v0 + up * height;
+
+    float frameDt = clamp(deltaTime, 0.0, 1.0 / 30.0);
+    int substepCount = clamp(int(ceil(frameDt / (1.0 / 120.0))), 1, 4);
+    float stepDt = frameDt / float(substepCount);
+
+    float windWave = sin(totalTime * 1.65 +
+                         v0.x * 0.55 + v0.z * 0.43);
+    float windDetail = sin(totalTime * 2.7 +
+                           v0.x * 1.31 - v0.z * 0.87);
+    vec3 windDirection = normalize(vec3(1.0, 0.0, 0.28));
+    vec3 windAcceleration = windDirection *
+        (0.72 * windWave + 0.18 * windDetail);
+    vec3 gravityAcceleration = vec3(0.0, -0.32, 0.0);
+
+    for (int step = 0; step < substepCount; ++step) {
+        // Stiffness from the JSON now acts as a spring frequency. The scale
+        // keeps the original 7..13 range responsive without becoming stiff
+        // enough to require many solver iterations.
+        vec3 recoveryAcceleration =
+            (restTip - tip) * (stiffness * 1.35);
+        vec3 acceleration = recoveryAcceleration +
+            gravityAcceleration + windAcceleration;
+
+        // Semi-implicit Euler: velocity first, position second.
+        velocity += acceleration * stepDt;
+        velocity *= exp(-5.2 * stepDt);
+        tip += velocity * stepDt;
+
+        // One tip particle represents an inextensible blade. Keep it exactly
+        // one blade height from the root, then remove radial velocity so the
+        // next frame cannot immediately fight the constraint.
+        vec3 rootToTip = tip - v0;
+        float rootToTipLength = length(rootToTip);
+        vec3 bladeAxis = rootToTipLength > 0.000001
+            ? rootToTip / rootToTipLength
+            : up;
+        tip = v0 + bladeAxis * height;
+        velocity -= bladeAxis * dot(velocity, bladeAxis);
+
+        // Grass is allowed to lean but not turn underneath the terrain.
+        if (dot(bladeAxis, up) < 0.35) {
+            vec3 horizontal = bladeAxis - up * dot(bladeAxis, up);
+            horizontal = length(horizontal) > 0.000001
+                ? normalize(horizontal)
+                : front;
+            bladeAxis = normalize(up * 0.35 + horizontal *
+                                  sqrt(1.0 - 0.35 * 0.35));
+            tip = v0 + bladeAxis * height;
+            velocity -= bladeAxis * dot(velocity, bladeAxis);
+        }
     }
-    
+
+    vec3 tipDirection = normalize(tip - v0);
+    float lean = clamp(length(tipDirection - up), 0.0, 1.0);
+    vec3 v1corr = v0 + up * height * mix(0.52, 0.40, lean);
+    v1corr += (tip - restTip) * 0.18;
+    vec3 v2corr = tip;
+
+    if (any(isnan(v1corr)) || any(isnan(v2corr)) ||
+        any(isnan(velocity)) || length(velocity) > 8.0) {
+        v1corr = v0 + up * height * 0.5;
+        v2corr = restTip;
+        velocity = vec3(0.0);
+    }
+
     blade.v1.xyz = v1corr;
     blade.v2.xyz = v2corr;
-    
+    blade.velocity.xyz = velocity;
+
     // Write back to preserve state
     inputBlades.blades[index] = blade;
-    
+
     // CULLING TESTS
-    
+
     // Orientation culling
     vec3 cameraPos = inverse(camera.view)[3].xyz;
     vec3 viewDir = normalize(v0 - cameraPos);
     vec3 bladeDir = normalize(cross(up, front));
-    
+
     float orientationThreshold = 0.9;
-    if (abs(dot(viewDir, bladeDir)) > orientationThreshold) {
-        return;
-    }
-    
+    bool grassOrientationVisible =
+        abs(dot(viewDir, bladeDir)) <= orientationThreshold;
+
     // View-frustum culling
     vec3 m = 0.25 * v0 + 0.5 * v1corr + 0.25 * v2corr;
-    
+
     vec4 clipV0 = camera.proj * camera.view * vec4(v0, 1.0);
     vec4 clipV2 = camera.proj * camera.view * vec4(v2corr, 1.0);
     vec4 clipM = camera.proj * camera.view * vec4(m, 1.0);
-    
+
     float tolerance = 1.0;
-    
+
     float hV0 = clipV0.w + tolerance;
     float hV2 = clipV2.w + tolerance;
     float hM = clipM.w + tolerance;
-    
+
     bool v0InFrustum = abs(clipV0.x) <= hV0 && abs(clipV0.y) <= hV0 && abs(clipV0.z) <= hV0;
     bool v2InFrustum = abs(clipV2.x) <= hV2 && abs(clipV2.y) <= hV2 && abs(clipV2.z) <= hV2;
     bool mInFrustum = abs(clipM.x) <= hM && abs(clipM.y) <= hM && abs(clipM.z) <= hM;
-    
+
     if (!v0InFrustum && !v2InFrustum && !mInFrustum) {
         return;
     }
-    
+
     // Distance culling
     float dist = length(v0 - cameraPos);
     float maxDistance = 50.0;
-    
+
     if (dist > maxDistance) {
         return;
     }
-    
+
     // Distance-based random culling
     int numBuckets = 10;
     float bucketSize = maxDistance / float(numBuckets);
     int bucket = int(dist / bucketSize);
-    
+
     // Use a hash to randomly cull based on distance
     uint hash = uint(v0.x * 12345.0 + v0.z * 67890.0 + index * 1000);
     float cullProbability = float(bucket) / float(numBuckets);
-    
+
     if ((hash % 100) / 100.0 < cullProbability) {
         return;
     }
-    
+
 
     // WRITE TO CULLED BUFFER
 
-    uint outputIndex = atomicAdd(numBlades.vertexCount, 1);
-    culledBlades.blades[outputIndex] = blade;
+    if (grassOrientationVisible) {
+        uint outputIndex = atomicAdd(numBlades.vertexCount, 1);
+        culledBlades.blades[outputIndex] = blade;
+    }
+
+    // Flowers share the simulation, frustum test and distance culling, but
+    // skip grass-card orientation culling because the blossom is radial.
+    if (flowerSettings.enabled != 0u) {
+        uint flowerHash = index * 747796405u + 2891336453u;
+        flowerHash = ((flowerHash >> ((flowerHash >> 28u) + 4u)) ^
+                      flowerHash) * 277803737u;
+        flowerHash = (flowerHash >> 22u) ^ flowerHash;
+        float selection = float(flowerHash & 65535u) / 65535.0;
+        if (selection < flowerSettings.density) {
+            uint flowerIndex = atomicAdd(flowerDraw.instanceCount, 1);
+            culledFlowers.blades[flowerIndex] = blade;
+        }
+    }
 }
