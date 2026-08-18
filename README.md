@@ -1,5 +1,4 @@
-Vulkan Grass Rendering
-==================================
+# Vulkan Rendering & GPU Grass System
 
 **University of Pennsylvania, CIS 565: GPU Programming and Architecture, Project 5**
 
@@ -13,9 +12,42 @@ Vulkan Grass Rendering
 
 ## Project Overview
 
-![](img/top.gif)
+![Vulkan showcase scene](img/vulkan_scene_hero.webp)
 
-This project implements a grass rendering system based on the paper [*Responsive Real-Time Grass Rendering for General 3D Scenes*](https://www.cg.tuwien.ac.at/research/publications/2017/JAHRMANN-2017-RRTG/JAHRMANN-2017-RRTG-draft.pdf). Each grass blade is represented as a Bezier curve and simulated on the GPU using compute shaders with physics forces (gravity, recovery, wind). The system generates blade geometry through tessellation and optimizes rendering with three culling techniques. A distance-based LOD system dynamically adjusts tessellation levels, a procedural skybox provides the background, and Lambert lighting with rim light enhances the grass shading.
+This project began as a grass rendering implementation based on the paper [*Responsive Real-Time Grass Rendering for General 3D Scenes*](https://www.cg.tuwien.ac.at/research/publications/2017/JAHRMANN-2017-RRTG/JAHRMANN-2017-RRTG-draft.pdf) and has grown into a broader Vulkan renderer. Each grass blade is represented as a Bezier curve, simulated on the GPU with compute shaders, and generated through tessellation. The renderer now also supports glTF scene loading, PBR materials, HDR image-based lighting, PCF shadows, scene frustum culling, static batching, mipmapping, configurable environments, and GPU-driven procedural flowers.
+
+![GPU grass and flower field](img/flower_field.webp)
+
+### Current Renderer Features
+
+- Compute-shader grass physics with gravity, recovery, wind, compaction, and
+  indirect drawing
+- Orientation, distance, and view-frustum culling with tessellation LOD
+- glTF 2.0 scene loading with metallic-roughness materials and normal maps
+- HDR environment maps with irradiance, prefiltered specular IBL, and BRDF LUT
+- Directional shadow mapping with PCF filtering
+- Static mesh batching, mipmapped textures, and runtime scene configuration
+- Procedural flowers generated from shared geometry and animated by the grass
+  simulation
+
+> **Repository scope:** this update contains renderer and shader source,
+> lightweight scene configuration, and curated showcase images. Large models,
+> grass-position caches, HDR environments, reference captures, generated
+> binaries, and build directories are intentionally excluded.
+
+### Renderer Validation Captures
+
+| Frustum culling off | Frustum culling on |
+| --- | --- |
+| ![Frustum culling disabled](img/validation-frustum-off.webp) | ![Frustum culling enabled](img/validation-frustum-on.webp) |
+
+| Shadow pass off | Shadow pass on |
+| --- | --- |
+| ![Shadow pass disabled](img/validation-shadows-off.webp) | ![Shadow pass enabled](img/validation-shadows-on.webp) |
+
+| Static batching off | Static batching on |
+| --- | --- |
+| ![Static batching disabled](img/validation-batching-off.webp) | ![Static batching enabled](img/validation-batching-on.webp) |
 
 ---
 

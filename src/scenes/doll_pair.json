@@ -1,0 +1,18 @@
+{
+  "showGround": false,
+  "showGrass": false,
+  "models": [
+    {
+      "path": "../models/Doll_Original_Static_PBR_Baked.glb",
+      "position": [-1.25, 0.0, 0.0],
+      "rotation": [0.0, 180.0, 0.0],
+      "scale": [1.0, 1.0, 1.0]
+    },
+    {
+      "path": "../models/Doll_Original_Static_PBR_Baked.glb",
+      "position": [1.25, 0.0, 0.0],
+      "rotation": [0.0, 180.0, 0.0],
+      "scale": [1.0, 1.0, 1.0]
+    }
+  ]
+}

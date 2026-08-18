@@ -1,0 +1,53 @@
+{
+  "showGround": false,
+  "showGrass": true,
+  "environment": {
+    "path": "../environments/sky_linekotsi_08_HDRI.hdr",
+    "backgroundIntensity": 0.68,
+    "lightingIntensity": 0.16,
+    "rotation": 114.0,
+    "visible": true
+  },
+  "camera": {
+    "position": [1.60, 1.40, 1.57],
+    "target": [-0.32, 1.20, -2.78],
+    "fov": 40.0,
+    "near": 0.02,
+    "far": 100.0
+  },
+  "grass": {
+    "enabled": true,
+    "positions": "../grass/Hunters_Dream_Field_MaterialFixed.grass",
+    "count": 16384,
+    "position": [-3.28, -3.54, 0.0],
+    "rotation": [0.0, 0.0, 0.0],
+    "scale": [0.1, 0.1, 0.1],
+    "minHeight": 0.085,
+    "maxHeight": 0.145,
+    "minWidth": 0.008,
+    "maxWidth": 0.014,
+    "minStiffness": 7.0,
+    "maxStiffness": 13.0,
+    "bottomColor": [0.055, 0.075, 0.060],
+    "topColor": [0.16, 0.22, 0.17],
+    "rimColor": [0.35, 0.42, 0.36],
+    "flowersEnabled": true,
+    "flowerDensity": 0.08,
+    "flowerHeightScale": 1.84,
+    "seed": 240519
+  },
+  "models": [
+    {
+      "path": "../models/Hunters_Dream_Vulkan_MaterialFixed.glb",
+      "position": [-3.28, -3.54, 0.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [0.1, 0.1, 0.1]
+    },
+    {
+      "path": "../models/BB_PlainDoll_NoBase_NoLantern_Static.glb",
+      "position": [-3.93, 0.409, -0.22],
+      "rotation": [0.0, -30.0, 0.0],
+      "scale": [0.0009, 0.0009, 0.0009]
+    }
+  ]
+}

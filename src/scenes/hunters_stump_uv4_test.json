@@ -1,0 +1,27 @@
+{
+  "showGround": true,
+  "showGrass": false,
+  "environment": {
+    "path": "../environments/default.hdr",
+    "backgroundIntensity": 0.10,
+    "lightingIntensity": 0.06,
+    "directLightingIntensity": 0.08,
+    "rotation": 205.0,
+    "visible": true
+  },
+  "camera": {
+    "position": [0.0, 1.2, 6.5],
+    "target": [0.0, 1.2, 0.0],
+    "fov": 35.0,
+    "near": 0.02,
+    "far": 40.0
+  },
+  "models": [
+    {
+      "path": "../models/Hunters_Dream_Stump_Uv4_PBRTest.glb",
+      "position": [0.0, 0.0, 0.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0]
+    }
+  ]
+}

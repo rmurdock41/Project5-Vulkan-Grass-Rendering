@@ -520,6 +520,25 @@ local.properties
 # CDT-specific
 #.cproject
 
+# Portfolio source-only update
+/build-*/
+/bin/
+/reference/
+/tools/
+/flower_preview*.png
+/img/flower.gif
+/img/vulkan_*_off.png
+/img/vulkan_*_on.png
+/img/vulkan_*_hud.png
+/src/environments/
+/src/grass/
+/src/models/
+*.glb
+*.gltf
+*.hdr
+*.exr
+*.grass
+
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
 

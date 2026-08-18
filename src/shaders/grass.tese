@@ -18,6 +18,7 @@ layout(location = 3) in vec4 in_up[];
 
 layout(location = 0) out vec3 fragNormal;
 layout(location = 1) out vec2 fragUV;
+layout(location = 2) out vec3 fragWorldPosition;
 
 void main() {
     float u = gl_TessCoord.x;
@@ -60,7 +61,7 @@ void main() {
     }
 
 fragNormal = normal;
-    
+    fragWorldPosition = worldPos;
     fragUV = vec2(u, v);
     
     gl_Position = camera.proj * camera.view * vec4(worldPos, 1.0);
